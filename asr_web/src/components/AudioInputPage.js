@@ -71,7 +71,12 @@ const AudioInputPage = () => {
 
     setIsUploading(true);
 
-    fetch("http://localhost:8080/processAudio", {
+    const apiEndpoint =
+      selectedModel === "whisper"
+        ? "http://localhost:8080/processAudioWhisper"
+        : "http://localhost:8080/processAudioWav2Vec";
+
+    fetch(apiEndpoint, {
       method: "POST",
       body: formData,
     })

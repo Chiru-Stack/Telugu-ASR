@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
-const { transcribeAudio } = require("./asr"); // Import the function
+const { transcribeWithWhisper, transcribeWithWav2Vec } = require("./asr");
 
 const app = express();
 const PORT = 8080;
@@ -22,27 +22,42 @@ const processAudio = multer({
   },
 });
 
-// Route for file upload
-app.post("/processAudio", processAudio.single("audioFile"), async (req, res) => {
+// Route for Whisper model transcription
+app.post("/processAudioWhisper", processAudio.single("audioFile"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded." });
   }
 
   console.log(`File uploaded successfully: ${req.file.originalname}`);
 
-  // Call the transcription function with the file buffer
-  let transcription;
   try {
-    transcription = await transcribeAudio(req.file.buffer);
+    const transcription = await transcribeWithWhisper(req.file.buffer);
+    res.status(200).json({
+      message: "File processed successfully with Whisper!",
+      transcription: transcription,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
+});
 
-  res.status(200).json({
-    message: "File processed successfully!",
-    transcription: transcription,
-  });
+// Route for Wav2Vec model transcription
+app.post("/processAudioWav2Vec", processAudio.single("audioFile"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded." });
+  }
 
+  console.log(`File uploaded successfully: ${req.file.originalname}`);
+
+  try {
+    const transcription = await transcribeWithWav2Vec(req.file.buffer);
+    res.status(200).json({
+      message: "File processed successfully with Wav2Vec!",
+      transcription: transcription,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 });
 
 // Error handling middleware
