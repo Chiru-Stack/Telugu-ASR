@@ -1,43 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Box,
   Button,
   Card,
   CardContent,
   CardHeader,
-  TextField,
   Typography,
   MenuItem,
   Select,
   FormControl,
   InputLabel,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 
 const AudioInputPage = () => {
   const [selectedModel, setSelectedModel] = useState("");
-  const [audioFile, setAudioFile] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [transcription, setTranscription] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const handleModelChange = (event) => {
     setSelectedModel(event.target.value);
   };
 
-  const handleAudioFileChange = (event) => {
-    if (event.target.files) {
-      setAudioFile(event.target.files[0]);
+  const startRecording = async () => {
+    if (!selectedModel) {
+      setSnackbarMessage("Please select a model!");
+      setSnackbarOpen(true);
+      return;
     }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorderRef.current = new MediaRecorder(stream);
+    audioChunksRef.current = [];
+
+    mediaRecorderRef.current.ondataavailable = (event) => {
+      audioChunksRef.current.push(event.data);
+    };
+
+    mediaRecorderRef.current.onstop = handleUpload;
+
+    mediaRecorderRef.current.start();
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
   };
 
   const handleUpload = () => {
-    if (!audioFile || !selectedModel) {
-      alert("Please select a model and upload a file!");
-      return;
-    }
-  
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
     const formData = new FormData();
-    formData.append("audioFile", audioFile);
-  
+    formData.append("audioFile", audioBlob);
+
     setIsUploading(true);
 
     fetch("http://localhost:8080/processAudio", {
@@ -48,13 +69,20 @@ const AudioInputPage = () => {
       .then((data) => {
         setIsUploading(false);
         console.log("Response from server:", data);
-        alert(data.message || "File uploaded successfully!");
-        setTranscription(data.transcription || "");
+        setTranscription(data.transcription || "No transcription available.");
+        setSnackbarMessage(data.message || "File uploaded successfully!");
+        setSnackbarOpen(true);
       })
       .catch((error) => {
         setIsUploading(false);
         console.error("Error uploading file:", error);
+        setSnackbarMessage("Error uploading file.");
+        setSnackbarOpen(true);
       });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   return (
@@ -69,7 +97,7 @@ const AudioInputPage = () => {
         <CardHeader
           title="Audio Input Page"
           titleTypographyProps={{ variant: "h6", fontWeight: "bold" }}
-          subheader="Select a model and upload an audio file to process"
+          subheader="Select a model and record audio to process"
           subheaderTypographyProps={{ variant: "body2", color: "textSecondary" }}
         />
         <CardContent>
@@ -85,38 +113,39 @@ const AudioInputPage = () => {
               <MenuItem value="wave2vec">Wave2Vec</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            fullWidth
-            margin="normal"
-            type="file"
-            inputProps={{ accept: "audio/*" }}
-            onChange={handleAudioFileChange}
-            helperText={audioFile ? `Selected: ${audioFile.name}` : ""}
-          />
         </CardContent>
         <Box textAlign="center" mt={2}>
           <Button
             variant="contained"
             color="primary"
-            onClick={handleUpload}
+            onClick={isRecording ? stopRecording : startRecording}
             disabled={isUploading}
           >
-            {isUploading ? "Uploading..." : "Upload and Process"}
+            {isRecording ? "Stop Recording" : "Start Recording"}
           </Button>
-          {transcription && (
-            <Typography
-              variant="body1"
-              mt={2}
-              style={{
-                opacity: transcription ? 1 : 0,
-                transition: "opacity 0.5s ease-in-out",
-              }}
-            >
-              {transcription}
-            </Typography>
-          )}
+          <Box mt={2} style={{ transition: "opacity 0.5s ease-in-out" }}>
+            {transcription && (
+              <Typography
+                variant="body1"
+                style={{
+                  opacity: transcription ? 1 : 0,
+                }}
+              >
+                {transcription}
+              </Typography>
+            )}
+          </Box>
         </Box>
       </Card>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="info" sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
