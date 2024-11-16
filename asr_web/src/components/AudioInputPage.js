@@ -23,6 +23,7 @@ const AudioInputPage = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const audioRecorderRef = useRef(new AudioRecorder());
+  const mediaStreamRef = useRef(null);
 
   const handleModelChange = (event) => {
     setSelectedModel(event.target.value);
@@ -37,6 +38,7 @@ const AudioInputPage = () => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
       audioRecorderRef.current.mediaRecorder = new MediaRecorder(stream);
       audioRecorderRef.current.audioChunks = [];
 
@@ -61,6 +63,11 @@ const AudioInputPage = () => {
       audioRecorderRef.current.mediaRecorder.stop();
       console.log("Recording stopped");
       setIsRecording(false);
+
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+      }
     }
   };
 
