@@ -13,6 +13,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import { AudioRecorder } from "../utils/AudioRecorder";
 
 const AudioInputPage = () => {
   const [selectedModel, setSelectedModel] = useState("");
@@ -21,8 +22,7 @@ const AudioInputPage = () => {
   const [transcription, setTranscription] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+  const audioRecorderRef = useRef(new AudioRecorder());
 
   const handleModelChange = (event) => {
     setSelectedModel(event.target.value);
@@ -35,27 +35,37 @@ const AudioInputPage = () => {
       return;
     }
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorderRef.current = new MediaRecorder(stream);
-    audioChunksRef.current = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioRecorderRef.current.mediaRecorder = new MediaRecorder(stream);
+      audioRecorderRef.current.audioChunks = [];
 
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      audioChunksRef.current.push(event.data);
-    };
+      audioRecorderRef.current.mediaRecorder.ondataavailable = (event) => {
+        audioRecorderRef.current.audioChunks.push(event.data);
+      };
 
-    mediaRecorderRef.current.onstop = handleUpload;
+      audioRecorderRef.current.mediaRecorder.onstop = handleUpload;
 
-    mediaRecorderRef.current.start();
-    setIsRecording(true);
+      audioRecorderRef.current.mediaRecorder.start();
+      console.log("Recording started");
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      setSnackbarMessage("Error starting recording.");
+      setSnackbarOpen(true);
+    }
   };
 
   const stopRecording = () => {
-    mediaRecorderRef.current.stop();
-    setIsRecording(false);
+    if (audioRecorderRef.current.mediaRecorder) {
+      audioRecorderRef.current.mediaRecorder.stop();
+      console.log("Recording stopped");
+      setIsRecording(false);
+    }
   };
 
   const handleUpload = () => {
-    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+    const audioBlob = audioRecorderRef.current.getAudioBlob();
     const formData = new FormData();
     formData.append("audioFile", audioBlob);
 
