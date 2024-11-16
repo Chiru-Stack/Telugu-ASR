@@ -25,6 +25,7 @@ const transcribeAudio = async (audioBuffer) => {
     if (response.data.error) {
       throw new Error(response.data.error);
     } else {
+      console.log("Transcription Result:", response.data.text);
       return response.data.text;
     }
   } catch (error) {

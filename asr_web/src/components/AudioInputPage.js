@@ -17,6 +17,7 @@ const AudioInputPage = () => {
   const [selectedModel, setSelectedModel] = useState("");
   const [audioFile, setAudioFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [transcription, setTranscription] = useState("");
 
   const handleModelChange = (event) => {
     setSelectedModel(event.target.value);
@@ -48,6 +49,7 @@ const AudioInputPage = () => {
         setIsUploading(false);
         console.log("Response from server:", data);
         alert(data.message || "File uploaded successfully!");
+        setTranscription(data.transcription || "");
       })
       .catch((error) => {
         setIsUploading(false);
@@ -101,6 +103,18 @@ const AudioInputPage = () => {
           >
             {isUploading ? "Uploading..." : "Upload and Process"}
           </Button>
+          {transcription && (
+            <Typography
+              variant="body1"
+              mt={2}
+              style={{
+                opacity: transcription ? 1 : 0,
+                transition: "opacity 0.5s ease-in-out",
+              }}
+            >
+              {transcription}
+            </Typography>
+          )}
         </Box>
       </Card>
     </Box>
