@@ -12,6 +12,7 @@ import {
   InputLabel,
   Snackbar,
   Alert,
+  rgbToHex,
 } from "@mui/material";
 import { AudioRecorder } from "../utils/AudioRecorder";
 
@@ -113,12 +114,42 @@ const AudioInputPage = () => {
       alignItems="center"
       justifyContent="center"
       minHeight="100vh"
-      bgcolor="#f5f5f5"
+      sx={{
+        bgcolor: "#000",
+        overflow: "hidden",
+        position: "relative",
+        "::before": {
+          content: '""',
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "20rem",
+          height: "20rem",
+          borderRadius: "50%",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: `
+            0 0 0 1rem rgba(169, 169, 169, 0.005),
+            0 0 0 3rem rgba(169, 169, 169, 0.06),
+            0 0 0 6rem rgba(169, 169, 169, 0.05),
+            0 0 0 9rem rgba(169, 169, 169, 0.04),
+            0 0 0 12rem rgba(169, 169, 169, 0.03),
+            0 0 0 15rem rgba(169, 169, 169, 0.02),
+            0 0 0 18rem rgba(169, 169, 169, 0.01),
+            0 0 0 21rem rgba(169, 169, 169, 0.008),
+            0 0 0 24rem rgba(169, 169, 169, 0.006),
+            0 0 0 27rem rgba(169, 169, 169, 0.004),
+            0 0 0 30rem rgba(169, 169, 169, 0.003),
+            0 0 0 33rem rgba(169, 169, 169, 0.002)
+          `,
+          transform: "translate(-50%, -50%)",
+          animation: "heartbeat 2s infinite ease-in-out",
+        },
+      }}
     >
-      <Card sx={{ width: 400, p: 2, boxShadow: 3 }}>
+      <Card sx={{ width: 500, p: 5, boxShadow: 3, backgroundColor: "rgb(169, 169, 169)" }}>
         <CardHeader
-          title="Audio Input Page"
-          titleTypographyProps={{ variant: "h6", fontWeight: "bold" }}
+          title="Transcribe with Wav2Vec and Whisper"
+          titleTypographyProps={{ variant: "h4", fontWeight: "bold", gutterBottom: true }}
           subheader="Select a model and record audio to process"
           subheaderTypographyProps={{ variant: "body2", color: "textSecondary" }}
         />
@@ -159,6 +190,21 @@ const AudioInputPage = () => {
           </Box>
         </Box>
       </Card>
+      <Box
+        component="footer"
+        sx={{
+          position: "absolute",
+          bottom: "10rem",
+          left: 0,
+          right: 0,
+          bgcolor: "black",
+          color: "white",
+          textAlign: "center",
+          p: 2,
+        }}
+      >
+        Made by Kaarthikeya Kammula, Chiranjeevi Karanki and Gunasekhar Devineni
+      </Box>
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
@@ -171,5 +217,21 @@ const AudioInputPage = () => {
     </Box>
   );
 };
+
+const styles = `
+@keyframes heartbeat {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+`;
+
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default AudioInputPage;
